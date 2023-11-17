@@ -140,6 +140,7 @@ bool SteeringOdometry::update_from_position(
 
   return update_odometry(linear_velocity, angular, dt);
 }
+
 bool SteeringOdometry::update_four_steering(
   const double fr_speed, const double fl_speed, const double rr_speed,
   const double rl_speed, const double front_steering, const double rear_steering, const double dt)
@@ -271,21 +272,30 @@ double SteeringOdometry::convert_trans_rot_vel_to_steering_angle(double Vx, doub
 }
 
 std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_commands(
-  double Vx, double theta_dot)
+  double Vx, double angular, bool from_twist)
 {
   // desired velocity and steering angle of the middle of traction and steering axis
   double Ws, alpha;
 
-  if (Vx == 0 && theta_dot != 0)
+  if (from_twist)
   {
-    alpha = theta_dot > 0 ? M_PI_2 : -M_PI_2;
-    Ws = abs(theta_dot) * wheelbase_ / wheel_radius_;
+    if (Vx == 0 && angular != 0)
+    {
+      //turning on the spot
+      alpha = angular > 0 ? M_PI_2 : -M_PI_2;
+      Ws = abs(angular) * wheelbase_ / wheel_radius_;
+    }
+    else
+    {
+      alpha = SteeringOdometry::convert_trans_rot_vel_to_steering_angle(Vx, angular);
+      Ws = Vx / (wheel_radius_ * std::cos(steer_pos_));
+    }
   }
   else
   {
-    alpha = SteeringOdometry::convert_trans_rot_vel_to_steering_angle(Vx, theta_dot);
-    Ws = Vx / (wheel_radius_ * std::cos(steer_pos_));
+    alpha = angular;
   }
+
 
   if (config_type_ == BICYCLE_CONFIG)
   {
@@ -361,6 +371,7 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
 
     double front_left_steering = 0.0;
     double front_right_steering = 0.0;
+
     // Compute steering angles
     if(fabs(2.0 * Ws) > fabs(alpha * steering_track))
     {
@@ -374,6 +385,7 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
       front_left_steering = copysign(M_PI_2, alpha);
       front_right_steering = copysign(M_PI_2, alpha);
     }
+
     double rear_left_steering = -front_left_steering;
     double rear_right_steering = -front_right_steering;
     steering_commands = {front_left_steering, front_right_steering, rear_left_steering, rear_right_steering};
