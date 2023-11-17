@@ -15,7 +15,7 @@ steering_controllers_library:
   four_steering: {
     type: bool,
     default_value: true,
-    description: "Is a four wheel steering robot?",
+    description: "Is this a four wheel steering robot?",
     read_only: true,
   }
 
@@ -142,10 +142,21 @@ steering_controllers_library:
     read_only: false,
   }
 
-  use_stamped_vel: {
+  use_stamped_msg: {
     type: bool,
     default_value: false,
-    description: "Choice of vel type, if use_stamped_vel is false then geometry_msgs::msg::Twist is taken as vel msg type, if
-    use_stamped_vel is true then geometry_msgs::msg::TwistStamped is taken as vel msg type",
+    description: "Choice of msg stamped type, depends on use_twist parameter. Configurations:
+    use_stamped_msg [true] & use_twist [true] => geometry_msgs::msg::TwistStamped,
+    use_stamped_msg [true] & use_twist [false] => ackermann_msgs::msg::AckermannDriveStamped,
+    use_stamped_msg [false] & use_twist [true] => geometry_msgs::msg::Twist,
+    use_stamped_msg [false] & use_twist [false] => ackermann_msgs::msg::AckermannDrive"
+    read_only: false,
+  }
+
+  use_twist: {
+    type: bool,
+    default_value: true,
+    description: "Choice of control type: if use_twist is true then geometry_msgs::msg::Twist is taken as the msg type; if
+    use_twist is false, then ackermann_msgs::msg::AckermannDrive is taken as the msg type."
     read_only: false,
   }
