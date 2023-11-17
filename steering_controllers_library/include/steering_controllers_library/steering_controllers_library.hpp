@@ -83,6 +83,7 @@ public:
   STEERING_CONTROLLERS__VISIBILITY_PUBLIC controller_interface::return_type
   update_and_write_commands(const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
+  //stamped
   using ControllerAckermannReferenceMsg = ackermann_msgs::msg::AckermannDriveStamped;
   using ControllerTwistReferenceMsg = geometry_msgs::msg::TwistStamped;
   using ControllerStateMsgOdom = nav_msgs::msg::Odometry;
@@ -98,7 +99,7 @@ protected:
 
   // Command subscribers and Controller State publisher
   rclcpp::Subscription<ControllerTwistReferenceMsg>::SharedPtr ref_subscriber_twist_ = nullptr;
-  rclcpp::Subscription<ControllerTwistReferenceMsg>::SharedPtr ref_subscriber_ackermann_ = nullptr;
+  rclcpp::Subscription<ControllerAckermannReferenceMsg>::SharedPtr ref_subscriber_ackermann_ = nullptr;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr ref_subscriber_unstamped_ = nullptr;
   realtime_tools::RealtimeBuffer<std::shared_ptr<ControllerTwistReferenceMsg>> input_ref_;
   rclcpp::Duration ref_timeout_ = rclcpp::Duration::from_seconds(0.0);  // 0ms
@@ -143,10 +144,13 @@ protected:
   std::vector<std::string> steers_names_;
 
 private:
-  // callback for topic interface
-  STEERING_CONTROLLERS__VISIBILITY_LOCAL void reference_callback(
+  // callbacks for topic interface
+  STEERING_CONTROLLERS__VISIBILITY_LOCAL void reference_callback_twist(
     const std::shared_ptr<ControllerTwistReferenceMsg> msg);
-  void reference_callback_unstamped(const std::shared_ptr<geometry_msgs::msg::Twist> msg);
+  void reference_callback_twist_unstamped(const std::shared_ptr<geometry_msgs::msg::Twist> msg);
+  STEERING_CONTROLLERS__VISIBILITY_LOCAL void reference_callback_ackermann(
+    const std::shared_ptr<ControllerAckermannReferenceMsg> msg);
+  void reference_callback_ackermann_unstamped(const std::shared_ptr<ackermann_msgs::msg::Ackermann> msg);
 };
 
 }  // namespace steering_controllers_library

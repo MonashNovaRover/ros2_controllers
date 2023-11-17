@@ -205,9 +205,10 @@ public:
    * \brief Calculates inverse kinematics for the desired linear and angular velocities
    * \param Vx  Desired linear velocity [m/s]
    * \param theta_dot Desired angular velocity [rad/s]
+   * \param from_twist if true angular is an angular velocity, else angular is a steering_angle (from AckermannDrive msg)
    * \return Tuple of velocity commands and steering commands
    */
-  std::tuple<std::vector<double>, std::vector<double>> get_commands(double Vx, double theta_dot);
+  std::tuple<std::vector<double>, std::vector<double>> get_commands(double Vx, double angular, bool from_twist);
 
   /**
    *  \brief Reset poses, heading, and accumulators
@@ -216,7 +217,7 @@ public:
 
 private:
   /**
-   * \brief Uses precomputed linear and angular velocities to compute dometry and update
+   * \brief Uses precomputed linear and angular velocities to compute odometry and update
    * accumulators \param linear  Linear  velocity   [m] (linear  displacement, i.e. m/s * dt)
    * computed by previous odometry method \param angular Angular velocity [rad] (angular
    * displacement, i.e. m/s * dt) computed by previous odometry method
