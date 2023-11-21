@@ -38,7 +38,7 @@ using ControllerStateMsg =
 using ControllerReferenceMsg =
   steering_controllers_library::SteeringControllersLibrary::ControllerTwistReferenceMsg;
 
-// NOTE: Testing steering_controllers_library for ackermann vehicle configuration only
+// NOTE: Testing steering_controllers_library for ackermann vehicle configuration only with twist subscription
 
 // name constants for state interfaces
 static constexpr size_t STATE_TRACTION_RIGHT_WHEEL = 0;
