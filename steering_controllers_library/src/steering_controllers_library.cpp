@@ -56,11 +56,11 @@ void reset_controller_reference_msg_ackermann(
   const std::shared_ptr<rclcpp_lifecycle::LifecycleNode> & node)
 {
   msg->header.stamp = node->now();
-  msg->steering_angle = std::numeric_limits<float32>::quiet_NaN();
-  msg->steering_angle_velocity = std::numeric_limits<float32>::quiet_NaN();
-  msg->speed = std::numeric_limits<float32>::quiet_NaN();
-  msg->acceleration = std::numeric_limits<float32>::quiet_NaN();
-  msg->jerk = std::numeric_limits<float32>::quiet_NaN();
+  msg->drive.steering_angle = std::numeric_limits<float>::quiet_NaN();
+  msg->drive.steering_angle_velocity = std::numeric_limits<float>::quiet_NaN();
+  msg->drive.speed = std::numeric_limits<float>::quiet_NaN();
+  msg->drive.acceleration = std::numeric_limits<float>::quiet_NaN();
+  msg->drive.jerk = std::numeric_limits<float>::quiet_NaN();
 }
 
 }  // namespace
@@ -132,7 +132,7 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
   ref_timeout_ = rclcpp::Duration::from_seconds(params_.reference_timeout);
   if (params_.use_twist)
   {
-    if (params.use_stamped_msg)
+    if (params_.use_stamped_msg)
     {
       ref_subscriber_twist_ = get_node()->create_subscription<ControllerTwistReferenceMsg>(
         "~/reference", subscribers_qos,
@@ -141,7 +141,7 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
     else
     {
 
-      ref_subscriber_unstamped_ = get_node()->create_subscription<geometry_msgs::msg::Twist>(
+      ref_subscriber_twist_unstamped_ = get_node()->create_subscription<geometry_msgs::msg::Twist>(
         "~/reference_unstamped", subscribers_qos,
         std::bind(
           &SteeringControllersLibrary::reference_callback_twist_unstamped, this, std::placeholders::_1));
@@ -150,21 +150,21 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
     std::shared_ptr<ControllerTwistReferenceMsg> msg =
       std::make_shared<ControllerTwistReferenceMsg>();
     reset_controller_reference_msg_twist(msg, get_node());
-    input_ref_.writeFromNonRT(msg);
+    input_ref_twist_.writeFromNonRT(msg);
 
   }
   else
   {
-    if (params.use_stamped_msg)
+    if (params_.use_stamped_msg)
     {
 
       ref_subscriber_ackermann_ = get_node()->create_subscription<ControllerAckermannReferenceMsg>(
         "~/reference", subscribers_qos,
-        std::bind(&SteeringControllersLibrary::reference_ackermann_callback, this, std::placeholders::_1));
+        std::bind(&SteeringControllersLibrary::reference_callback_ackermann, this, std::placeholders::_1));
     }
     else
     {
-      ref_subscriber_unstamped_ = get_node()->create_subscription<ackermann_msgs::msg::AckermannDrive>(
+      ref_subscriber_ackermann_unstamped_ = get_node()->create_subscription<ackermann_msgs::msg::AckermannDrive>(
         "~/reference_unstamped", subscribers_qos,
         std::bind(
           &SteeringControllersLibrary::reference_callback_ackermann_unstamped, this, std::placeholders::_1));
@@ -173,7 +173,7 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
     std::shared_ptr<ControllerAckermannReferenceMsg> msg =
       std::make_shared<ControllerAckermannReferenceMsg>();
     reset_controller_reference_msg_ackermann(msg, get_node());
-    input_ref_.writeFromNonRT(msg);
+    input_ref_ackermann_.writeFromNonRT(msg);
   }
 
   try
@@ -271,7 +271,7 @@ void SteeringControllersLibrary::reference_callback_twist(
 
   if (ref_timeout_ == rclcpp::Duration::from_seconds(0) || age_of_last_command <= ref_timeout_)
   {
-    input_ref_.writeFromNonRT(msg);
+    input_ref_twist_.writeFromNonRT(msg);
   }
   else
   {
@@ -292,7 +292,7 @@ void SteeringControllersLibrary::reference_callback_twist_unstamped(
     "Use of Twist message without stamped is deprecated and it will be removed in ROS 2 J-Turtle "
     "version. Use '~/reference' topic with 'geometry_msgs::msg::TwistStamped' message type in the "
     "future.");
-  auto twist_stamped = *(input_ref_.readFromNonRT());
+  auto twist_stamped = *(input_ref_twist_.readFromNonRT());
   twist_stamped->header.stamp = get_node()->now();
   // if no timestamp provided use current time for command timestamp
   if (twist_stamped->header.stamp.sec == 0 && twist_stamped->header.stamp.nanosec == 0u)
@@ -335,7 +335,7 @@ void SteeringControllersLibrary::reference_callback_ackermann(
 
   if (ref_timeout_ == rclcpp::Duration::from_seconds(0) || age_of_last_command <= ref_timeout_)
   {
-    input_ref_.writeFromNonRT(msg);
+    input_ref_ackermann_.writeFromNonRT(msg);
   }
   else
   {
@@ -351,10 +351,10 @@ void SteeringControllersLibrary::reference_callback_ackermann(
 void SteeringControllersLibrary::reference_callback_ackermann_unstamped(
   const std::shared_ptr<ackermann_msgs::msg::AckermannDrive> msg)
 {
-  auto ackermann_stamped = *(input_ref_.readFromNonRT());
+  auto ackermann_stamped = *(input_ref_ackermann_.readFromNonRT());
   ackermann_stamped->header.stamp = get_node()->now();
   // if no timestamp provided use current time for command timestamp
-  if (twist_stamped->header.stamp.sec == 0 && twist_stamped->header.stamp.nanosec == 0u)
+  if (ackermann_stamped->header.stamp.sec == 0 && ackermann_stamped->header.stamp.nanosec == 0u)
   {
     RCLCPP_WARN(
       get_node()->get_logger(),
@@ -374,7 +374,7 @@ void SteeringControllersLibrary::reference_callback_ackermann_unstamped(
       get_node()->get_logger(),
       "Received message has timestamp %.10f older for %.10f which is more then allowed timeout "
       "(%.4f).",
-      rclcpp::Time(twist_stamped->header.stamp).seconds(), age_of_last_command.seconds(),
+      rclcpp::Time(ackermann_stamped->header.stamp).seconds(), age_of_last_command.seconds(),
       ref_timeout_.seconds());
   }
 }
@@ -517,13 +517,13 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   // Set default value in command
-  if (params.use_twist)
+  if (params_.use_twist)
   {
-    reset_controller_reference_msg_twist(*(input_ref_.readFromRT()), get_node());
+    reset_controller_reference_msg_twist(*(input_ref_twist_.readFromRT()), get_node());
   } 
   else
   {
-    reset_controller_reference_msg_ackermann(*(input_ref_.readFromRT()), get_node());
+    reset_controller_reference_msg_ackermann(*(input_ref_ackermann_.readFromRT()), get_node());
   }
 
   return controller_interface::CallbackReturn::SUCCESS;
@@ -539,55 +539,12 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_deactivate(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::return_type SteeringControllersLibrary::update_reference_from_subscribers(
-  const rclcpp::Time & time, const rclcpp::Duration & /*period*/)
+controller_interface::return_type SteeringControllersLibrary::update_reference_from_subscribers()
 {
-  auto current_ref = *(input_ref_.readFromRT());
-  const auto age_of_last_command = time - (current_ref)->header.stamp;
 
-  // send message only if there is no timeout
-  if (age_of_last_command <= ref_timeout_ || ref_timeout_ == rclcpp::Duration::from_seconds(0))
-  {
-    if (params.use_twist)
-    {
-      if (!std::isnan(current_ref->twist.linear.x) && !std::isnan(current_ref->twist.angular.z))
-      {
-        reference_interfaces_[0] = current_ref->twist.linear.x;
-        reference_interfaces_[1] = current_ref->twist.angular.z;
-      }
-    }
-    else
-    {
-      if (!std::isnan(current_ref->drive.speed) && !std::isnan(current_ref->drive.steering_angle))
-      {
-        reference_interfaces_[0] = current_ref->drive.speed
-        reference_interfaces_[1] = current_ref->drive.steering_angle
-      }
-    }
-  }
-  else
-  {
-    if (params.use_twist)
-    {
-      if (!std::isnan(current_ref->twist.linear.x) && !std::isnan(current_ref->twist.angular.z))
-      {
-        reference_interfaces_[0] = 0.0;
-        reference_interfaces_[1] = 0.0;
-        current_ref->twist.linear.x = std::numeric_limits<double>::quiet_NaN();
-        current_ref->twist.angular.z = std::numeric_limits<double>::quiet_NaN();
-      }
-    }
-    else
-    {
-      if (!std::isnan(current_ref->drive.speed) && !std::isnan(current_ref->drive.steering_angle))
-      {
-        reference_interfaces_[0] = 0.0;
-        reference_interfaces_[1] = 0.0;
-        current_ref->drive.speed = std::numeric_limits<float32>::quiet_NaN();
-        current_ref->drive.steering_angle = std::numeric_limits<float32>::quiet_NaN();
-      }
-    }
-  }
+  //some issue with using this function in humble - check 'humble' branch of official ros2_controllers repo  
+  //functionality moved to update_and_write_commands
+
 
   return controller_interface::return_type::OK;
 }
@@ -595,6 +552,60 @@ controller_interface::return_type SteeringControllersLibrary::update_reference_f
 controller_interface::return_type SteeringControllersLibrary::update_and_write_commands(
   const rclcpp::Time & time, const rclcpp::Duration & period)
 {
+
+  if (!is_in_chained_mode())
+  {
+      if (params_.use_twist)
+      {
+        auto current_ref = *(input_ref_twist_.readFromRT());
+        const auto age_of_last_command = time - (current_ref)->header.stamp;
+
+        // send message only if there is no timeout
+        if (age_of_last_command <= ref_timeout_ || ref_timeout_ == rclcpp::Duration::from_seconds(0))
+        {
+          if (!std::isnan(current_ref->twist.linear.x) && !std::isnan(current_ref->twist.angular.z))
+          {
+            reference_interfaces_[0] = current_ref->twist.linear.x;
+            reference_interfaces_[1] = current_ref->twist.angular.z;
+          }
+        }
+        else
+        {
+          if (!std::isnan(current_ref->twist.linear.x) && !std::isnan(current_ref->twist.angular.z))
+          {
+            reference_interfaces_[0] = 0.0;
+            reference_interfaces_[1] = 0.0;
+            current_ref->twist.linear.x = std::numeric_limits<double>::quiet_NaN();
+            current_ref->twist.angular.z = std::numeric_limits<double>::quiet_NaN();
+          }
+        }
+      }
+      else
+      {
+        auto current_ref = *(input_ref_ackermann_.readFromRT());
+        const auto age_of_last_command = time - (current_ref)->header.stamp;
+
+        // send message only if there is no timeout
+        if (age_of_last_command <= ref_timeout_ || ref_timeout_ == rclcpp::Duration::from_seconds(0))
+        {
+          if (!std::isnan(current_ref->drive.speed) && !std::isnan(current_ref->drive.steering_angle))
+          {
+            reference_interfaces_[0] = current_ref->drive.speed;
+            reference_interfaces_[1] = current_ref->drive.steering_angle;
+          }
+        }
+        else
+        {
+          if (!std::isnan(current_ref->drive.speed) && !std::isnan(current_ref->drive.steering_angle))
+          {
+            reference_interfaces_[0] = 0.0;
+            reference_interfaces_[1] = 0.0;
+            current_ref->drive.speed = std::numeric_limits<float>::quiet_NaN();
+            current_ref->drive.steering_angle = std::numeric_limits<float>::quiet_NaN();
+          }
+        }
+      }
+  }
   update_odometry(period);
 
   // MOVE ROBOT
@@ -608,7 +619,7 @@ controller_interface::return_type SteeringControllersLibrary::update_and_write_c
     const double linear_command = reference_interfaces_[0];
     const double angular_command = reference_interfaces_[1];
     auto [traction_commands, steering_commands] =
-      odometry_.get_commands(linear_command, angular_command);
+      odometry_.get_commands(linear_command, angular_command, params_.use_twist);
 
     if (params_.four_steering)
     {
