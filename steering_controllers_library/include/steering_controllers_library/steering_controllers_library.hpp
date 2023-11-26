@@ -77,8 +77,8 @@ public:
     const rclcpp_lifecycle::State & previous_state) override;
 
   STEERING_CONTROLLERS__VISIBILITY_PUBLIC controller_interface::return_type
-  update_reference_from_subscribers(
-    const rclcpp::Time & time, const rclcpp::Duration & period) override;
+  update_reference_from_subscribers() override;
+    
 
   STEERING_CONTROLLERS__VISIBILITY_PUBLIC controller_interface::return_type
   update_and_write_commands(const rclcpp::Time & time, const rclcpp::Duration & period) override;
@@ -100,8 +100,11 @@ protected:
   // Command subscribers and Controller State publisher
   rclcpp::Subscription<ControllerTwistReferenceMsg>::SharedPtr ref_subscriber_twist_ = nullptr;
   rclcpp::Subscription<ControllerAckermannReferenceMsg>::SharedPtr ref_subscriber_ackermann_ = nullptr;
-  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr ref_subscriber_unstamped_ = nullptr;
-  realtime_tools::RealtimeBuffer<std::shared_ptr<ControllerTwistReferenceMsg>> input_ref_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr ref_subscriber_twist_unstamped_ = nullptr;
+  rclcpp::Subscription<ackermann_msgs::msg::AckermannDrive>::SharedPtr ref_subscriber_ackermann_unstamped_ = nullptr;
+  realtime_tools::RealtimeBuffer<std::shared_ptr<ControllerTwistReferenceMsg>> input_ref_twist_;
+  realtime_tools::RealtimeBuffer<std::shared_ptr<ControllerAckermannReferenceMsg>> input_ref_ackermann_;
+
   rclcpp::Duration ref_timeout_ = rclcpp::Duration::from_seconds(0.0);  // 0ms
 
   using ControllerStatePublisherOdom = realtime_tools::RealtimePublisher<ControllerStateMsgOdom>;
@@ -150,7 +153,7 @@ private:
   void reference_callback_twist_unstamped(const std::shared_ptr<geometry_msgs::msg::Twist> msg);
   STEERING_CONTROLLERS__VISIBILITY_LOCAL void reference_callback_ackermann(
     const std::shared_ptr<ControllerAckermannReferenceMsg> msg);
-  void reference_callback_ackermann_unstamped(const std::shared_ptr<ackermann_msgs::msg::Ackermann> msg);
+  void reference_callback_ackermann_unstamped(const std::shared_ptr<ackermann_msgs::msg::AckermannDrive> msg);
 };
 
 }  // namespace steering_controllers_library
