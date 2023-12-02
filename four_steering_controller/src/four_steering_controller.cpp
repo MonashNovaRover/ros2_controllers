@@ -214,7 +214,8 @@ controller_interface::return_type FourSteeringController::update(
     last1_cmd_ = last0_cmd_;
     last0_cmd_ = curr_cmd_twist;
     
-    if(fabs(curr_cmd_twist.twist.linear.x) > 0.001)
+    /* not sure why this was here in the first place*/
+    //if(fabs(curr_cmd_twist.twist.linear.x) > 0.001)
     {
       const double vel_steering_offset = (curr_cmd_twist.twist.angular.z * params_.wheel_steering_y_offset_) / params_.wheel_radius_;
       const double sign = copysign(1.0, curr_cmd_twist.twist.linear.x);
@@ -235,6 +236,7 @@ controller_interface::return_type FourSteeringController::update(
                         + vel_steering_offset;
       wheel_vel_cmd[3] = vel_left_front;
     }
+
     // Compute steering angles:
     if(fabs(2.0*curr_cmd_twist.twist.linear.x) > fabs(curr_cmd_twist.twist.angular.z*steering_track))
     {
