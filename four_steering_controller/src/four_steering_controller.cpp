@@ -263,8 +263,8 @@ controller_interface::return_type FourSteeringController::update(
     limiter_lin_.limit(curr_cmd_4ws.data.speed, last0_cmd_4ws_.data.speed, last1_cmd_4ws_.data.speed, period.seconds());
     last1_cmd_4ws_ = last0_cmd_4ws_;
     last0_cmd_4ws_ = curr_cmd_4ws;
-    curr_cmd_4ws.data.front_steering_angle = std::clamp(curr_cmd_4ws.data.front_steering_angle, -M_PI_4, M_PI_4);
-    curr_cmd_4ws.data.rear_steering_angle = std::clamp(curr_cmd_4ws.data.rear_steering_angle,  -M_PI_4, M_PI_4);
+    curr_cmd_4ws.data.front_steering_angle = std::clamp(static_cast<double>(curr_cmd_4ws.data.front_steering_angle), -M_PI_4, M_PI_4);
+    curr_cmd_4ws.data.rear_steering_angle = std::clamp(static_cast<double>(curr_cmd_4ws.data.rear_steering_angle),  -M_PI_4, M_PI_4);
 
     // Compute steering angles
     const double tan_front_steering = tan(curr_cmd_4ws.data.front_steering_angle);

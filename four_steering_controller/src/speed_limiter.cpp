@@ -57,6 +57,71 @@ SpeedLimiter::SpeedLimiter(
   }
 }
 
+/* *** for four_wheel_steering_msgs *** */
+float SpeedLimiter::limit(float & v, float v0, float v1, float dt)
+{
+  const float tmp = v;
+
+  limit_jerk(v, v0, v1, dt);
+  limit_acceleration(v, v0, dt);
+  limit_velocity(v);
+
+  return tmp != 0.0 ? v / tmp : 1.0;
+}
+
+float SpeedLimiter::limit_velocity(float & v)
+{
+  const float tmp = v;
+
+  if (has_velocity_limits_)
+  {
+    v = rcppmath::clamp(v, static_cast<float>(min_velocity_), static_cast<float>(max_velocity_));
+  }
+
+  return tmp != 0.0 ? v / tmp : 1.0;
+}
+
+float SpeedLimiter::limit_acceleration(float & v, float v0, float dt)
+{
+  const float tmp = v;
+
+  if (has_acceleration_limits_)
+  {
+    const float dv_min = min_acceleration_ * dt;
+    const float dv_max = max_acceleration_ * dt;
+
+    const float dv = rcppmath::clamp(v - v0, dv_min, dv_max);
+
+    v = v0 + dv;
+  }
+
+  return tmp != 0.0 ? v / tmp : 1.0;
+}
+
+float SpeedLimiter::limit_jerk(float & v, float v0, float v1, float dt)
+{
+  const float tmp = v;
+
+  if (has_jerk_limits_)
+  {
+    const float dv = v - v0;
+    const float dv0 = v0 - v1;
+
+    const float dt2 = 2. * dt * dt;
+
+    const float da_min = min_jerk_ * dt2;
+    const float da_max = max_jerk_ * dt2;
+
+    const float da = rcppmath::clamp(dv - dv0, da_min, da_max);
+
+    v = v0 + dv0 + da;
+  }
+
+  return tmp != 0.0 ? v / tmp : 1.0;
+}
+
+/* ***for twist*** */
+
 double SpeedLimiter::limit(double & v, double v0, double v1, double dt)
 {
   const double tmp = v;

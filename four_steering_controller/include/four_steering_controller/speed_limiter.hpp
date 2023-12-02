@@ -36,12 +36,19 @@ public:
    */
   double limit(double & v, double v0, double v1, double dt);
 
+  //for four_wheel_steering_msgs
+  float limit(float & v, float v0, float v1, float dt);
+
+
   /**
    * \brief Limit the velocity
    * \param [in, out] v Velocity [m/s]
    * \return Limiting factor (1.0 if none)
    */
   double limit_velocity(double & v);
+
+  //for four_wheel_steering_msgs
+  float limit_velocity(float & v);
 
   /**
    * \brief Limit the acceleration
@@ -51,6 +58,9 @@ public:
    * \return Limiting factor (1.0 if none)
    */
   double limit_acceleration(double & v, double v0, double dt);
+
+  float limit_acceleration(float & v, float v0, float dt);
+
 
   /**
    * \brief Limit the jerk
@@ -62,6 +72,9 @@ public:
    * \see http://en.wikipedia.org/wiki/Jerk_%28physics%29#Motion_control
    */
   double limit_jerk(double & v, double v0, double v1, double dt);
+
+  float limit_jerk(float & v, float v0, float v1, float dt);
+
 
 private:
   // Enable/Disable velocity/acceleration/jerk limits:
